@@ -184,15 +184,15 @@ extern "C" {
 #define CALMAGMM 0x07
 #define CALREFANGLE 0x08
 #define CALMAG2STEP 0x09
-//#define CALACCX         0x09
-//#define ACC45PRX        0x0A
-//#define ACC45NRX        0x0B
-//#define CALACCY         0x0C
-//#define ACC45PRY        0x0D
-//#define ACC45NRY     	  0x0E
-//#define CALREFANGLER    0x0F
-//#define CALACCINIT      0x10
-//#define CALREFANGLEINIT 0x11
+// #define CALACCX         0x09
+// #define ACC45PRX        0x0A
+// #define ACC45NRX        0x0B
+// #define CALACCY         0x0C
+// #define ACC45PRY        0x0D
+// #define ACC45NRY     	  0x0E
+// #define CALREFANGLER    0x0F
+// #define CALACCINIT      0x10
+// #define CALREFANGLEINIT 0x11
 #define CALHEXAHEDRON 0x12
 
 /************OUTPUTHEAD**************/
