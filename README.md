@@ -37,14 +37,16 @@ ROS2 port of [WitStandardProtocol_JY901](https://github.com/WITMOTION/WitStandar
 
 ## Usage
 
-just compile & run, make sure the serial port is accessible.
+just compile & run, make sure the sensor is connected and the serial port is accessible.
+
+imu data will be available on topic `/imu`. feel free to put the node into a namespace.
 
 ```bash
-ros2 run witmotion_ros2_driver witmotion_ros2_driver
+ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0
 
 # custom parent tf frame name
-ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p tf_parent_frame:=my_parent_frame
+ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p parent_frame:=base_link
 
 # or you just don't want to broadcast tf
-ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p broadcast_tf:=false
+ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p broadcast_tf:=false
 ```
