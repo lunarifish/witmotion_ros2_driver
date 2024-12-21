@@ -50,3 +50,9 @@ ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=
 # or you just don't want to broadcast tf
 ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p broadcast_tf:=false
 ```
+
+## Why reinventing the wheel?
+
+There is already an ROS2 driver for this sensor/protocol: [ioio2995/witmotion_ros2](https://github.com/ioio2995/witmotion_ros2), but unfortunately on my [HWT606](https://wit-motion.yuque.com/wumwnr/docs/bgnf89) it doesn't work properly. So I decided to write my own one, based on [the official SDK](https://github.com/WITMOTION/WitStandardProtocol_JY901/tree/main/Linux_C).
+
+If this version of the driver doesn't work for you, you might want to try the other one. good luck!
