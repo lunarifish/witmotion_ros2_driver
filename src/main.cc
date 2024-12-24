@@ -14,13 +14,13 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <boost/asio.hpp>
 
 #include <cstdint>
 #include <functional>
 #include <thread>
 #include <memory>
 
-#include "serial.h"
 #include "wit_c_sdk.h"
 #include "REG.h"
 
@@ -40,44 +40,82 @@ class WitMotionNode : public rclcpp::Node {
  public:
   WitMotionNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions()) : Node("witmotion_node", options) {
     declare_parameter<std::string>("serial_port", "/dev/ttyCH341USB0");
+    declare_parameter<int>("baud_rate", 921600);
     declare_parameter<std::string>("tf_parent_frame", "base_link");
     declare_parameter<bool>("broadcast_tf", true);
     get_parameter("serial_port", ros_parameters_.serial_port);
+    get_parameter("baud_rate", ros_parameters_.baud_rate);
     get_parameter("tf_parent_frame", ros_parameters_.tf_parent_frame);
     get_parameter("broadcast_tf", ros_parameters_.broadcast_tf);
 
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
     transform_stamped_.header.frame_id = ros_parameters_.tf_parent_frame;
     transform_stamped_.child_frame_id = "imu";
-    imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("imu", 10);
+    imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("imu", rclcpp::SensorDataQoS());
 
-    if ((serial_fd_ = serial_open(ros_parameters_.serial_port.c_str(), 9600) < 0)) {
+    RCLCPP_INFO(get_logger(), "try to open %s, %zu baud", ros_parameters_.serial_port.c_str(),
+                ros_parameters_.baud_rate);
+    try {
+      serial_port_.open(ros_parameters_.serial_port);
+      serial_port_.set_option(boost::asio::serial_port_base::baud_rate(ros_parameters_.baud_rate));
+    } catch (const std::exception& e) {
       RCLCPP_ERROR(get_logger(), "open %s fail", ros_parameters_.serial_port.c_str());
       rclcpp::shutdown();
-    } else {
-      RCLCPP_INFO(get_logger(), "open %s success", ros_parameters_.serial_port.c_str());
     }
+    RCLCPP_INFO(get_logger(), "open success");
 
     WitInit(WIT_PROTOCOL_NORMAL, 0x50);
     WitRegisterCallBack(
         StdFunctionToFuncPtr([&](uint32_t uiReg, uint32_t uiRegNum) { SensorDataUpdateCallback(uiReg, uiRegNum); }));
-    ScanForSensor();
 
+    std::string imu_topic_name = "/imu";
     main_loop_thread_ = std::thread(&WitMotionNode::MainLoop, this);
-    RCLCPP_INFO(get_logger(), "publishing imu data on imu topic");
+    if (get_namespace() != std::string("/")) {
+      imu_topic_name = get_namespace() + imu_topic_name;
+    }
+    RCLCPP_INFO(get_logger(), "publishing imu data on %s", imu_topic_name.c_str());
     if (ros_parameters_.broadcast_tf) {
       RCLCPP_INFO(get_logger(), "broadcasting transform: %s -> imu", ros_parameters_.tf_parent_frame.c_str());
     }
   }
 
-  ~WitMotionNode() override { serial_close(serial_fd_); }
+  ~WitMotionNode() override {
+    RCLCPP_INFO(get_logger(), "closing %s", ros_parameters_.serial_port.c_str());
+    try {
+      serial_port_.close();
+    } catch (const std::exception& e) {
+      RCLCPP_ERROR(get_logger(), "close %s fail: %s", ros_parameters_.serial_port.c_str(), e.what());
+    }
+    main_loop_thread_.join();
+  }
 
  private:
   void MainLoop() {
     unsigned char single_byte_buff;
+    unsigned int fails = 0;
+    auto boost_buffer = boost::asio::buffer(&single_byte_buff, 1);
+
     while (rclcpp::ok()) {
-      while (serial_read(serial_fd_, &single_byte_buff, 1)) {
+      try {
+        serial_port_.read_some(boost_buffer);
         WitSerialDataIn(single_byte_buff);
+      } catch (const std::exception& e) {
+        RCLCPP_ERROR(get_logger(), "read %s fail: %s", ros_parameters_.serial_port.c_str(), e.what());
+        ++fails;
+        if (fails > 10) {
+          RCLCPP_ERROR(get_logger(), "too many read fails, trying to recover: attempt %d", fails - 10);
+          // try to recover
+          try {
+            serial_port_.close();
+            serial_port_.open(ros_parameters_.serial_port);
+            serial_port_.set_option(boost::asio::serial_port_base::baud_rate(ros_parameters_.baud_rate));
+            fails = 0;
+            RCLCPP_INFO(get_logger(), "recover success");
+          } catch (const std::exception& e) {
+            RCLCPP_ERROR(get_logger(), "recover fail: %s", e.what());
+            std::this_thread::sleep_for(1s);
+          }
+        }
       }
     }
   }
@@ -133,42 +171,15 @@ class WitMotionNode : public rclcpp::Node {
     }
   }
 
-  void ScanForSensor() {
-    constexpr int c_uiBaud[] = {2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
-    int i, iRetry;
-    unsigned char cBuff;
-
-    for (i = 1; i < 10; i++) {
-      serial_close(serial_fd_);
-      serial_fd_ = serial_open(this->ros_parameters_.serial_port.c_str(), c_uiBaud[i]);
-      RCLCPP_INFO(get_logger(), "looking for sensor at %d baud", c_uiBaud[i]);
-      iRetry = 2;
-      do {
-        valid_transmissions_ = 0;
-        WitReadReg(AX, 3);
-        std::this_thread::sleep_for(10ms);
-        while (serial_read(serial_fd_, &cBuff, 1)) {
-          WitSerialDataIn(cBuff);
-        }
-        if (valid_transmissions_ != 0) {
-          RCLCPP_INFO(get_logger(), "find sensor @%d baud", c_uiBaud[i]);
-          return;
-        }
-        iRetry--;
-      } while (iRetry);
-    }
-
-    RCLCPP_ERROR(get_logger(), "can't find sensor");
-    rclcpp::shutdown();
-  }
-
  private:
   struct {
     std::string serial_port{};
+    size_t baud_rate{};
     std::string tf_parent_frame{};
     bool broadcast_tf{};
   } ros_parameters_{};
-  int serial_fd_{};
+  boost::asio::io_service io_service_;
+  boost::asio::serial_port serial_port_{io_service_};
 
   struct {
     bool acc{false};
