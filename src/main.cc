@@ -39,7 +39,7 @@ static auto StdFunctionToFuncPtr(F&& f) -> void (*)(uint32_t, uint32_t) {
 class WitMotionNode : public rclcpp::Node {
  public:
   WitMotionNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions()) : Node("witmotion_node", options) {
-    declare_parameter<std::string>("serial_port", "/dev/ttyCH341USB0");
+    declare_parameter<std::string>("serial_port", "/dev/ttyUSB0");
     declare_parameter<int>("baud_rate", 921600);
     declare_parameter<std::string>("tf_parent_frame", "base_link");
     declare_parameter<bool>("broadcast_tf", true);
@@ -50,7 +50,7 @@ class WitMotionNode : public rclcpp::Node {
 
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
     transform_stamped_.header.frame_id = ros_parameters_.tf_parent_frame;
-    transform_stamped_.child_frame_id = "imu";
+    transform_stamped_.child_frame_id = "imu_link";
     imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("imu", rclcpp::SensorDataQoS());
 
     RCLCPP_INFO(get_logger(), "try to open %s, %zu baud", ros_parameters_.serial_port.c_str(),

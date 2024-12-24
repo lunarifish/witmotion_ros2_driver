@@ -1,6 +1,6 @@
 # witmotion_ros2_driver
 
-ROS2 port of [WitStandardProtocol_JY901](https://github.com/WITMOTION/WitStandardProtocol_JY901/), currently only very basic functionality is implemented.
+ROS2 implementation of [WitStandardProtocol_JY901](https://github.com/WITMOTION/WitStandardProtocol_JY901/), currently only very basic functionalities are implemented.
 
 ## CI Status
 
@@ -37,19 +37,31 @@ ROS2 port of [WitStandardProtocol_JY901](https://github.com/WITMOTION/WitStandar
 
 ## Usage
 
-just compile & run, make sure the sensor is connected and the serial port is accessible.
-
-imu data will be available on topic `/imu`. feel free to put the node into a namespace.
+install boost library if you haven't already:
 
 ```bash
-ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0
-
-# custom parent tf frame name
-ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p parent_frame:=base_link
-
-# or you just don't want to broadcast tf
-ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p broadcast_tf:=false
+sudo apt-get update
+sudo apt-get install libboost-all-dev
 ```
+
+and just compile & run:
+
+```bash
+colcon build --packages-select witmotion_ros2_driver
+ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p baud_rate:=921600
+```
+
+there whill be a transform from `parent_frame` to `imu_link` published, if you didn't disable it by setting `broadcast_tf` to false. `sensor_msgs/Imu` messages are published on the `imu` topic. feel free to put the node into a namespace.
+
+### Node parameters
+
+- `serial_port` (string, default: "/dev/ttyUSB0"): the serial port to connect to.
+
+- `baud_rate` (int, default: 921600): the baud rate of the serial port.
+
+- `parent_frame` (string, default: "base_link"): the parent frame of the imu data.
+
+- `broadcast_tf` (bool, default: true): whether to broadcast transform from `parent_frame` to `imu_link`.
 
 ## Why reinventing the wheel?
 
