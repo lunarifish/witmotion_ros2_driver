@@ -47,14 +47,14 @@ ROS2 implementation of [WitStandardProtocol_JY901](https://github.com/WITMOTION/
 2. Make serial port accessible:
 
    ```bash
-   sudo chmod 666 /dev/tty...  # replace ... with the actual port name
+   sudo chmod 666 /dev/tty<whatever>    # replace <whatever> with the actual port name
    ```
 
 > [!TIP]
 > Make use of udev to do the chmod automatically. Create a file `/etc/udev/rules.d/99-witmotion-serial.rules` with the following content:
 >
 > ```bash
-> SUBSYSTEM=="tty...", MODE="0666"
+> SUBSYSTEM=="tty<whatever>", MODE="0666"
 > ```
 >
 > then, execute:
