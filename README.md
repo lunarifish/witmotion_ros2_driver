@@ -77,15 +77,13 @@ There whill be a transform from `parent_frame` to `imu_link` published, if you d
 
 ### Node parameters
 
-- `device_addr` (int, default: 0x50): the address of the device.
-
-- `serial_port` (string, default: "/dev/ttyUSB0"): the serial port to connect to.
-
-- `baud_rate` (int, default: 921600): the baud rate of the serial port.
-
-- `parent_frame` (string, default: "base_link"): the parent frame of the imu data.
-
-- `broadcast_tf` (bool, default: true): whether to broadcast transform from `parent_frame` to `imu_link`.
+| Parameter      | Type   | Default        | Description                        |
+| -------------- | ------ | -------------- | ---------------------------------- |
+| `device_addr`  | int    | 0x50           | the address of the device          |
+| `serial_port`  | string | "/dev/ttyUSB0" | the serial port to connect to      |
+| `baud_rate`    | int    | 921600         | the baud rate of the serial port   |
+| `parent_frame` | string | "base_link"    | the parent frame of the imu data   |
+| `broadcast_tf` | bool   | true           | whether to broadcast the transform |
 
 ## Why reinventing the wheel?
 
