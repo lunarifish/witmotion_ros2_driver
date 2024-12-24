@@ -12,6 +12,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/imu.hpp>
+#include <sys/socket.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <boost/asio.hpp>
@@ -39,10 +40,12 @@ static auto StdFunctionToFuncPtr(F&& f) -> void (*)(uint32_t, uint32_t) {
 class WitMotionNode : public rclcpp::Node {
  public:
   WitMotionNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions()) : Node("witmotion_node", options) {
+    declare_parameter<int>("device_addr", 0x50);
     declare_parameter<std::string>("serial_port", "/dev/ttyUSB0");
     declare_parameter<int>("baud_rate", 921600);
     declare_parameter<std::string>("tf_parent_frame", "base_link");
     declare_parameter<bool>("broadcast_tf", true);
+    get_parameter("device_addr", ros_parameters_.device_addr);
     get_parameter("serial_port", ros_parameters_.serial_port);
     get_parameter("baud_rate", ros_parameters_.baud_rate);
     get_parameter("tf_parent_frame", ros_parameters_.tf_parent_frame);
@@ -59,12 +62,14 @@ class WitMotionNode : public rclcpp::Node {
       serial_port_.open(ros_parameters_.serial_port);
       serial_port_.set_option(boost::asio::serial_port_base::baud_rate(ros_parameters_.baud_rate));
     } catch (const std::exception& e) {
-      RCLCPP_ERROR(get_logger(), "open %s fail", ros_parameters_.serial_port.c_str());
+      RCLCPP_FATAL(get_logger(), "open %s fail", ros_parameters_.serial_port.c_str());
       rclcpp::shutdown();
+      return;
     }
     RCLCPP_INFO(get_logger(), "open success");
 
-    WitInit(WIT_PROTOCOL_NORMAL, 0x50);
+    RCLCPP_INFO(get_logger(), "init witmotion sensor at 0x%02zx", ros_parameters_.device_addr);
+    WitInit(WIT_PROTOCOL_NORMAL, ros_parameters_.device_addr);
     WitRegisterCallBack(
         StdFunctionToFuncPtr([&](uint32_t uiReg, uint32_t uiRegNum) { SensorDataUpdateCallback(uiReg, uiRegNum); }));
 
@@ -173,6 +178,7 @@ class WitMotionNode : public rclcpp::Node {
 
  private:
   struct {
+    size_t device_addr{};
     std::string serial_port{};
     size_t baud_rate{};
     std::string tf_parent_frame{};
