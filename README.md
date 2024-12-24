@@ -37,21 +37,43 @@ ROS2 implementation of [WitStandardProtocol_JY901](https://github.com/WITMOTION/
 
 ## Usage
 
-install boost library if you haven't already:
+1. Install boost library if you haven't already:
 
-```bash
-sudo apt-get update
-sudo apt-get install libboost-all-dev
-```
+   ```bash
+   sudo apt-get update
+   sudo apt-get install libboost-all-dev
+   ```
 
-and just compile & run:
+2. Make serial port accessible:
 
-```bash
-colcon build --packages-select witmotion_ros2_driver
-ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p baud_rate:=921600
-```
+   ```bash
+   sudo chmod 666 /dev/tty...  # replace ... with the actual port name
+   ```
 
-there whill be a transform from `parent_frame` to `imu_link` published, if you didn't disable it by setting `broadcast_tf` to false. `sensor_msgs/Imu` messages are published on the `imu` topic. feel free to put the node into a namespace.
+   > [!TIP]
+   > Make use of udev to do the chmod automatically. Create a file `/etc/udev/rules.d/99-witmotion-serial.rules` with the following content:
+   >
+   > ```bash
+   > SUBSYSTEM=="tty...", MODE="0666"
+   > ```
+   >
+   > then, execute:
+   >
+   > ```bash
+   > sudo udevadm control --reload-rules
+   > sudo udevadm trigger
+   > ```
+
+3. And just compile & run:
+
+   ```bash
+   colcon build --packages-select witmotion_ros2_driver
+   ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p baud_rate:=921600
+   ```
+
+There whill be a transform from `parent_frame` to `imu_link` published, if you didn't disable it by setting `broadcast_tf` to false.
+
+`sensor_msgs/Imu` messages are published on the `imu` topic. feel free to put the node into a namespace.
 
 ### Node parameters
 
