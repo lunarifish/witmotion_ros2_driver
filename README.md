@@ -50,19 +50,19 @@ ROS2 implementation of [WitStandardProtocol_JY901](https://github.com/WITMOTION/
    sudo chmod 666 /dev/tty...  # replace ... with the actual port name
    ```
 
-   > [!TIP]
-   > Make use of udev to do the chmod automatically. Create a file `/etc/udev/rules.d/99-witmotion-serial.rules` with the following content:
-   >
-   > ```bash
-   > SUBSYSTEM=="tty...", MODE="0666"
-   > ```
-   >
-   > then, execute:
-   >
-   > ```bash
-   > sudo udevadm control --reload-rules
-   > sudo udevadm trigger
-   > ```
+> [!TIP]
+> Make use of udev to do the chmod automatically. Create a file `/etc/udev/rules.d/99-witmotion-serial.rules` with the following content:
+>
+> ```bash
+> SUBSYSTEM=="tty...", MODE="0666"
+> ```
+>
+> then, execute:
+>
+> ```bash
+> sudo udevadm control --reload-rules
+> sudo udevadm trigger
+> ```
 
 3. And just compile & run:
 
