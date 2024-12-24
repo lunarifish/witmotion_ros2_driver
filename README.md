@@ -71,7 +71,7 @@ ROS2 implementation of [WitStandardProtocol_JY901](https://github.com/WITMOTION/
    ros2 run witmotion_ros2_driver witmotion_ros2_driver --ros-args -p serial_port:=/dev/ttyUSB0 -p baud_rate:=921600
    ```
 
-There whill be a transform from `parent_frame` to `imu_link` published, if you didn't disable it by setting `broadcast_tf` to false.
+There will be a transform from `parent_frame` to `imu_link` published, if you didn't disable it by setting `broadcast_tf` to false.
 
 `sensor_msgs/Imu` messages are published on the `imu` topic. feel free to put the node into a namespace.
 
